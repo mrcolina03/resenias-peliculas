@@ -3,8 +3,11 @@ package edu.espe.proyectoresenasbackend.web.controller;
 import edu.espe.proyectoresenasbackend.dto.ResenaRequest;
 import edu.espe.proyectoresenasbackend.dto.ResenaResponse;
 import edu.espe.proyectoresenasbackend.service.ResenaService;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Flux;
 
 import java.util.List;
 
@@ -19,7 +22,6 @@ public class ResenaController {
 
     @PostMapping
     public ResponseEntity<ResenaResponse> create(@RequestBody ResenaRequest request) {
-        // .block() fuerza la ejecución síncrona para evitar el error 403 de Security
         ResenaResponse response = service.create(request).block();
         return ResponseEntity.ok(response);
     }
@@ -32,7 +34,6 @@ public class ResenaController {
 
     @GetMapping
     public ResponseEntity<List<ResenaResponse>> list() {
-        // Convertimos el Flux a una lista estándar de Java
         List<ResenaResponse> response = service.list().collectList().block();
         return ResponseEntity.ok(response);
     }
@@ -55,8 +56,17 @@ public class ResenaController {
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping(path = "/stream/pelicula/{peliculaId}", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public Flux<ServerSentEvent<ResenaResponse>> streamByPelicula(@PathVariable Long peliculaId) {
+        return service.streamByPeliculaId(peliculaId)
+                .map(resena -> ServerSentEvent.<ResenaResponse>builder()
+                        .event("resena-nueva")
+                        .data(resena)
+                        .build());
+    }
+
     @PostMapping("/demo-backpressure")
-    public ResponseEntity<List<String>> demoBackpressure() { // Retorna List<String>
+    public ResponseEntity<List<String>> demoBackpressure() {
         List<String> logs = service.procesarCalificacionesPorLotes();
         return ResponseEntity.ok(logs);
     }

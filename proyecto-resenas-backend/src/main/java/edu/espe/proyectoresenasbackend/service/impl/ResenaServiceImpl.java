@@ -9,10 +9,11 @@ import edu.espe.proyectoresenasbackend.repository.PeliculaRepository;
 import edu.espe.proyectoresenasbackend.repository.ResenaRepository;
 import edu.espe.proyectoresenasbackend.repository.UsuarioRepository;
 import edu.espe.proyectoresenasbackend.service.ResenaService;
-import edu.espe.proyectoresenasbackend.util.CustomSubscriber; // Importar tu subscriber
+import edu.espe.proyectoresenasbackend.util.CustomSubscriber;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.publisher.Sinks;
 
 import java.util.List;
 
@@ -21,11 +22,13 @@ public class ResenaServiceImpl implements ResenaService {
     private final ResenaRepository repository;
     private final UsuarioRepository usuarioRepo;
     private final PeliculaRepository peliculaRepo;
+    private final Sinks.Many<ResenaResponse> resenaSink;
 
     public ResenaServiceImpl(ResenaRepository repository, UsuarioRepository usuarioRepo, PeliculaRepository peliculaRepo) {
         this.repository = repository;
         this.usuarioRepo = usuarioRepo;
         this.peliculaRepo = peliculaRepo;
+        this.resenaSink = Sinks.many().multicast().onBackpressureBuffer();
     }
 
     @Override
@@ -43,7 +46,8 @@ public class ResenaServiceImpl implements ResenaService {
             r.setPelicula(pelicula);
 
             return repository.save(r);
-        }).map(this::toResponse);
+        }).map(this::toResponse)
+                .doOnNext(resenaSink::tryEmitNext);
     }
 
     @Override
@@ -55,7 +59,6 @@ public class ResenaServiceImpl implements ResenaService {
 
     @Override
     public Flux<ResenaResponse> list() {
-        // Convertimos la lista bloqueante en un Flux
         return Flux.defer(() -> Flux.fromIterable(repository.findAll()))
                 .map(this::toResponse);
     }
@@ -77,7 +80,8 @@ public class ResenaServiceImpl implements ResenaService {
             r.setPelicula(pelicula);
 
             return repository.save(r);
-        }).map(this::toResponse);
+        }).map(this::toResponse)
+                .doOnNext(resenaSink::tryEmitNext);
     }
 
     @Override
@@ -91,20 +95,20 @@ public class ResenaServiceImpl implements ResenaService {
                 .map(this::toResponse);
     }
 
-    // --- Implementación del Laboratorio (Backpressure) ---
+    @Override
+    public Flux<ResenaResponse> streamByPeliculaId(Long peliculaId) {
+        return resenaSink.asFlux()
+                .filter(resena -> peliculaId.equals(resena.getPeliculaId()));
+    }
+
     @Override
     public List<String> procesarCalificacionesPorLotes() {
-        // 1. Crear el Flux
         Flux<Integer> calificacionesFlux = Flux.fromIterable(repository.findAll())
                 .map(Resena::getCalificacion);
 
-        // 2. Crear instancia de tu subscriber
         CustomSubscriber subscriber = new CustomSubscriber(3);
-
-        // 3. Suscribirse (Como es un Flux de Iterable, esto ocurre síncronamente aquí)
         calificacionesFlux.subscribe(subscriber);
 
-        // 4. Devolver los logs capturados
         return subscriber.getLogs();
     }
 
@@ -115,10 +119,8 @@ public class ResenaServiceImpl implements ResenaService {
         resp.setCalificacion(r.getCalificacion());
         resp.setFechaCreacion(r.getFechaCreacion());
 
-        // Mapeo del Usuario
         if (r.getUsuario() != null) {
             resp.setUsuarioId(r.getUsuario().getId());
-            // AQUÍ AGREGAMOS EL NOMBRE
             resp.setUsuarioNombre(r.getUsuario().getNombreCompleto());
         }
 

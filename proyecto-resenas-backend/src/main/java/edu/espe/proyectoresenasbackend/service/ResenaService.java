@@ -14,6 +14,7 @@ public interface ResenaService {
     Mono<ResenaResponse> update(Long id, ResenaRequest request);
     Mono<Void> delete(Long id);
     Flux<ResenaResponse> listByPeliculaId(Long peliculaId);
+    Flux<ResenaResponse> streamByPeliculaId(Long peliculaId);
 
     List<String> procesarCalificacionesPorLotes();
 }
