@@ -26,11 +26,60 @@
     font-size: 2rem;
     border-bottom: 2px solid var(--color-primario);
     padding-bottom: 0.5rem;
-    margin-bottom: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.live-reviews-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+
+.live-caption {
+    margin-bottom: 1rem;
+    color: var(--color-texto-secundario);
+    font-size: 0.95rem;
+}
+
+.live-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: 999px;
+    padding: 6px 14px;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.live-pill.connected {
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.4);
+    background-color: rgba(16, 185, 129, 0.1);
+}
+
+.live-pill.disconnected {
+    color: #f87171;
+    border: 1px solid rgba(248, 113, 113, 0.4);
+    background-color: rgba(248, 113, 113, 0.1);
+}
+
+.live-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: currentColor;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 0.4; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.1); }
+    100% { opacity: 0.4; transform: scale(1); }
 }
 
 .resena-form {
-    background-color: transparent; /* Ya tiene fondo global */
+    background-color: transparent;
     padding: 0;
     max-width: none;
     margin-bottom: 2rem;
@@ -48,9 +97,10 @@
     cursor: pointer;
     transition: color 0.2s;
 }
+
 .star:hover,
 .star.active {
-    color: #f5c518; /* Color estrella de IMDb */
+    color: #f5c518;
 }
 
 .error-msg {
@@ -69,14 +119,29 @@
 .resena-list {
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
+    gap: 1rem;
+}
+
+.live-chat-list {
+    max-height: 600px;
+    overflow-y: auto;
+    padding-right: 6px;
 }
 
 .resena-card {
     background-color: var(--color-superficie);
     border: 1px solid var(--color-borde);
     border-radius: 8px;
-    padding: 1.5rem;
+    padding: 1.25rem;
+}
+
+.live-chat-item {
+    transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.live-chat-item.new-message {
+    border-color: rgba(52, 211, 153, 0.8);
+    background-color: rgba(16, 185, 129, 0.08);
 }
 
 .resena-card-header {
@@ -94,6 +159,10 @@
 .resena-calificacion {
     font-size: 1.1rem;
     color: #f5c518;
+}
+
+.stars-empty {
+    color: #ccc;
 }
 
 .resena-card p {

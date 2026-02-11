@@ -12,6 +12,19 @@ const getAuthHeaders = () => {
   };
 };
 
+const parseJsonSafely = async (response) => {
+  const rawBody = await response.text();
+  if (!rawBody) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(rawBody);
+  } catch {
+    return null;
+  }
+};
+
 /* =========================
    CHAT
 ========================= */
@@ -32,17 +45,19 @@ export const sendMessage = async ({ usuarioId, contenido }) => {
     body: JSON.stringify({ usuarioId, contenido }),
   });
 
+  const body = await parseJsonSafely(res);
+
   if (!res.ok) {
-    const error = await res.text();
-    console.error(error);
-    throw new Error("Error al enviar mensaje");
+    const backendError = body?.message || `HTTP ${res.status}`;
+    throw new Error(`Error al enviar mensaje: ${backendError}`);
   }
 
-  return res.json();
+  // En algunos casos el backend puede responder 200 sin body
+  return body;
 };
 
 /* =========================
-   SSE (TOKEN EN QUERY)
+   SSE
 ========================= */
 export const connectToStream = (onMessage) => {
   const eventSource = new EventSource(
@@ -61,7 +76,6 @@ export const connectToStream = (onMessage) => {
 
   return eventSource;
 };
-
 
 /* =========================
    SIMULADOR

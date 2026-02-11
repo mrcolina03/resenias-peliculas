@@ -2,39 +2,36 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 const API_URL = `${API_BASE_URL}/api/resenas/resena`;
 
-// --- Helpers (copiados de tu usuarioApi.js) ---
 const getAuthHeader = () => {
     const token = localStorage.getItem('token');
     return token ? { 'Authorization': `Bearer ${token}` } : {};
 };
+
 const getHeaders = (customHeaders = {}) => ({
     ...getAuthHeader(),
     ...customHeaders,
 });
+
 const handleResponse = async (response) => {
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.message || `Error ${response.status}`);
     }
+
     const contentType = response.headers.get('content-type');
-    if (contentType && contentType.indexOf('application/json') !== -1) {
+    if (contentType && contentType.includes('application/json')) {
         return response.json();
     }
+
     return {};
 };
-// --- ---
 
-// GET: Obtener reseñas por ID de película (Público)
-// Asumimos que tu backend soporta esto (ej: /reseñas/pelicula/1)
-// Si no, tendremos que filtrar en el frontend.
 export const getResenasPorPeliculaRequest = async (peliculaId) => {
     const response = await fetch(`${API_URL}/pelicula/${peliculaId}`);
     return handleResponse(response);
 };
 
-// POST: Crear una nueva reseña (Protegido)
 export const createResenaRequest = async (resenaData) => {
-    // resenaData debe ser { comentario, calificacion, usuarioId, peliculaId }
     const response = await fetch(API_URL, {
         method: 'POST',
         headers: getHeaders({ 'Content-Type': 'application/json' }),
@@ -43,7 +40,6 @@ export const createResenaRequest = async (resenaData) => {
     return handleResponse(response);
 };
 
-// PUT: Actualizar una reseña (Protegido)
 export const updateResenaRequest = async (id, resenaData) => {
     const response = await fetch(`${API_URL}/${id}`, {
         method: 'PUT',
@@ -53,32 +49,55 @@ export const updateResenaRequest = async (id, resenaData) => {
     return handleResponse(response);
 };
 
-// DELETE: Borrar una reseña (Protegido)
 export const deleteResenaRequest = async (id) => {
     const response = await fetch(`${API_URL}/${id}`, {
         method: 'DELETE',
         headers: getHeaders(),
     });
+
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.message || `Error ${response.status}`);
     }
+
     return response.status === 204;
 };
 
 export const getResenasByPelicula = async (peliculaId) => {
     const response = await fetch(`${API_URL}/pelicula/${peliculaId}`, {
-        headers: getHeaders()
+        headers: getHeaders(),
     });
     return handleResponse(response);
 };
 
-// --- NUEVO MÉTODO PARA EL LABORATORIO ---
+export const connectResenasStreamByPelicula = (peliculaId, onMessage, onError) => {
+    const streamUrl = `${API_URL}/stream/pelicula/${peliculaId}`;
+    const eventSource = new EventSource(streamUrl);
+
+    const handleIncomingMessage = (event) => {
+        const payload = JSON.parse(event.data);
+        onMessage(payload);
+    };
+
+    // Soporta eventos SSE con nombre custom (`event: resena-nueva`)
+    eventSource.addEventListener('resena-nueva', handleIncomingMessage);
+
+    // Fallback por compatibilidad si el backend envía evento por defecto (`message`)
+    eventSource.onmessage = handleIncomingMessage;
+
+    eventSource.onerror = (event) => {
+        if (onError) {
+            onError(event);
+        }
+    };
+
+    return eventSource;
+};
+
 export const triggerBackpressureDemo = async () => {
     const response = await fetch(`${API_URL}/demo-backpressure`, {
         method: 'POST',
-        headers: getHeaders()
+        headers: getHeaders(),
     });
-    // Este endpoint devuelve un String plano, handleResponse lo manejará con .text()
     return handleResponse(response);
 };
