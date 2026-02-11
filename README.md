@@ -55,7 +55,7 @@ npm install
 npm run dev
 ```
 
-Frontend disponible en: `http://localhost:5173`
+Frontend disponible en: `http://localhost:5173` (o el puerto que Vite asigne, por ejemplo `5174`).
 
 ## 4) Variables de entorno del frontend
 
