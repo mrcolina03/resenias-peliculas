@@ -108,7 +108,20 @@ function PeliculaDetallePage() {
                 peliculaId: parseInt(id, 10),
             };
 
-            await createResenaRequest(nuevaResena);
+            const createdResena = await createResenaRequest(nuevaResena);
+
+            // Render inmediato para el emisor (además del stream SSE para el resto de clientes)
+            setResenas((prevResenas) => {
+                const alreadyExists = prevResenas.some((item) => item.id === createdResena.id);
+                if (alreadyExists) {
+                    return prevResenas;
+                }
+                return [{
+                    ...createdResena,
+                    usuarioNombre: createdResena.usuarioNombre || user?.nombreCompleto,
+                }, ...prevResenas];
+            });
+
             setComentario('');
             setCalificacion(0);
         } catch (submitError) {

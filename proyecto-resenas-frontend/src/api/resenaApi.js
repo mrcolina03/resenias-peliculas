@@ -74,10 +74,16 @@ export const connectResenasStreamByPelicula = (peliculaId, onMessage, onError) =
     const streamUrl = `${API_URL}/stream/pelicula/${peliculaId}`;
     const eventSource = new EventSource(streamUrl);
 
-    eventSource.onmessage = (event) => {
+    const handleIncomingMessage = (event) => {
         const payload = JSON.parse(event.data);
         onMessage(payload);
     };
+
+    // Soporta eventos SSE con nombre custom (`event: resena-nueva`)
+    eventSource.addEventListener('resena-nueva', handleIncomingMessage);
+
+    // Fallback por compatibilidad si el backend envía evento por defecto (`message`)
+    eventSource.onmessage = handleIncomingMessage;
 
     eventSource.onerror = (event) => {
         if (onError) {
